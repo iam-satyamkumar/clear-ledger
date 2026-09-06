@@ -14,3 +14,8 @@ spring:
 
   flyway:
     enabled: true
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:clearledger-dev-secret-key-must-be-long-enough-32chars}
+    expiration-ms: ${JWT_EXPIRATION_MS:3600000}

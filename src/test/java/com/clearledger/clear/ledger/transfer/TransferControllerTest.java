@@ -14,6 +14,11 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+
 @WebMvcTest(TransferController.class)
 @Import(GlobalExceptionHandler.class)
 class TransferControllerTest {
@@ -62,4 +67,26 @@ class TransferControllerTest {
 
         verifyNoInteractions(transferService);
     }
+
+@Test
+void returnsConflictWhenOptimisticLockFails() throws Exception {
+    when(transferService.transfer(any(), any(), any(), any()))
+            .thenThrow(new ObjectOptimisticLockingFailureException(
+                    "Account", 1L));
+
+    mockMvc.perform(post("/transfers")
+                    .header("Idempotency-Key", "http-key-conflict")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                            {
+                              "fromAccountId": 1,
+                              "toAccountId": 2,
+                              "amount": 100
+                            }
+                            """))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.status").value(409))
+            .andExpect(jsonPath("$.message")
+                    .value("Account was updated by another transfer; please retry"));
+}
 }

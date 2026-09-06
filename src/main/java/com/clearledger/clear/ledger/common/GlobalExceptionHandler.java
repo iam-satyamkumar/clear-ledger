@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -48,6 +49,17 @@ public ResponseEntity<ApiError> handleMissingHeader(
             exception.getHeaderName() + " header is required");
 
     return ResponseEntity.badRequest().body(error);
+}
+
+@ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+public ResponseEntity<ApiError> handleOptimisticLock(
+        ObjectOptimisticLockingFailureException exception) {
+
+    ApiError error = new ApiError(
+            HttpStatus.CONFLICT.value(),
+            "Account was updated by another transfer; please retry");
+
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
 }
 
 }
